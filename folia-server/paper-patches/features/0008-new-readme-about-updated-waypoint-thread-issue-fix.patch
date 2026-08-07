@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: aloweeed <134882723+aloweeed@users.noreply.github.com>
+Date: Fri, 7 Aug 2026 18:47:12 +0300
+Subject: [PATCH] new readme, /about updated, waypoint thread issue fix
+
+
+diff --git a/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java b/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
+index 30815c8970b1f1c88a3c7bb5fd36efd915f1687d..1a3dd4b89b84d311709f4b96c3669fa30d0a1d3c 100644
+--- a/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
++++ b/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
+@@ -41,7 +41,7 @@ public class PaperVersionFetcher implements VersionFetcher {
+     private static final int DISTANCE_ERROR = -1;
+     private static final int DISTANCE_UNKNOWN = -2;
+     private static final String DOWNLOAD_PAGE = "https://papermc.io/downloads/folia"; // Folia
+-    private static final String REPOSITORY = "PaperMC/Folia"; // Folia
++    private static final String REPOSITORY = "aloweeed/florium-mc"; // Folia
+     private static final ServerBuildInfo BUILD_INFO = ServerBuildInfo.buildInfo();
+     private static final String USER_AGENT = BUILD_INFO.brandName() + "/" + BUILD_INFO.asString(VERSION_SIMPLE) + " (https://papermc.io)";
+     private static final Gson GSON = new Gson();
+diff --git a/src/main/java/io/papermc/paper/command/PaperVersionCommand.java b/src/main/java/io/papermc/paper/command/PaperVersionCommand.java
+index 5f17c295e2158b93ed6f77012c0ac5507ac88284..f3d58d300bda8694ed5de9dfe78420adaabe025b 100644
+--- a/src/main/java/io/papermc/paper/command/PaperVersionCommand.java
++++ b/src/main/java/io/papermc/paper/command/PaperVersionCommand.java
+@@ -21,6 +21,7 @@ import net.kyori.adventure.text.TextComponent;
+ import net.kyori.adventure.text.event.ClickEvent;
+ import net.kyori.adventure.text.format.NamedTextColor;
+ import net.kyori.adventure.text.format.TextDecoration;
++import net.kyori.adventure.text.minimessage.MiniMessage;
+ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+ import net.minecraft.server.MinecraftServer;
+ import org.bukkit.Bukkit;
+@@ -34,13 +35,13 @@ public class PaperVersionCommand {
+     public static final String DESCRIPTION = "Gets the version of this server including any plugins in use";
+ 
+     private static final Component NOT_RUNNING = Component.text()
+-        .append(Component.text("This server is not running any plugin by that name."))
+-        .appendNewline()
+-        .append(Component.text("Use /plugins to get a list of plugins.").clickEvent(ClickEvent.suggestCommand("/plugins")))
+-        .build();
++            .append(Component.text("This server is not running any plugin by that name."))
++            .appendNewline()
++            .append(Component.text("Use /plugins to get a list of plugins.").clickEvent(ClickEvent.suggestCommand("/plugins")))
++            .build();
+     private static final JoinConfiguration PLAYER_JOIN_CONFIGURATION = JoinConfiguration.separators(
+-        Component.text(", ", NamedTextColor.WHITE),
+-        Component.text(", and ", NamedTextColor.WHITE)
++            Component.text(", ", NamedTextColor.WHITE),
++            Component.text(", and ", NamedTextColor.WHITE)
+     );
+     private static final Component FAILED_TO_FETCH = Component.text("Could not fetch version information!", NamedTextColor.RED);
+     private static final Component FETCHING = Component.text("Checking version, please wait...", NamedTextColor.WHITE, TextDecoration.ITALIC);
+@@ -52,12 +53,12 @@ public class PaperVersionCommand {
+         final PaperVersionCommand command = new PaperVersionCommand();
+ 
+         return Commands.literal("version")
+-            .requires(source -> source.getSender().hasPermission("bukkit.command.version"))
+-            .then(Commands.argument("plugin", StringArgumentType.word())
+-                .suggests(command::suggestPlugins)
+-                .executes(command::pluginVersion))
+-            .executes(command::serverVersion)
+-            .build();
++                .requires(source -> source.getSender().hasPermission("bukkit.command.version"))
++                .then(Commands.argument("plugin", StringArgumentType.word())
++                        .suggests(command::suggestPlugins)
++                        .executes(command::pluginVersion))
++                .executes(command::serverVersion)
++                .build();
+     }
+ 
+     private int pluginVersion(final CommandContext<CommandSourceStack> context) {
+@@ -67,9 +68,9 @@ public class PaperVersionCommand {
+         Plugin plugin = Bukkit.getPluginManager().getPlugin(pluginName);
+         if (plugin == null) {
+             plugin = Arrays.stream(Bukkit.getPluginManager().getPlugins())
+-                .filter(checkPlugin -> checkPlugin.getName().toLowerCase(Locale.ROOT).contains(pluginName))
+-                .findAny()
+-                .orElse(null);
++                    .filter(checkPlugin -> checkPlugin.getName().toLowerCase(Locale.ROOT).contains(pluginName))
++                    .findAny()
++                    .orElse(null);
+         }
+ 
+         if (plugin != null) {
+@@ -96,17 +97,17 @@ public class PaperVersionCommand {
+         final PluginMeta meta = plugin.getPluginMeta();
+ 
+         final TextComponent.Builder builder = Component.text()
+-            .append(Component.text(meta.getName()))
+-            .append(Component.text(" version "))
+-            .append(Component.text(meta.getVersion(), NamedTextColor.GREEN)
+-                .hoverEvent(Component.translatable("chat.copy.click"))
+-                .clickEvent(ClickEvent.copyToClipboard(meta.getVersion()))
+-            );
++                .append(Component.text(meta.getName()))
++                .append(Component.text(" version "))
++                .append(Component.text(meta.getVersion(), NamedTextColor.GREEN)
++                        .hoverEvent(Component.translatable("chat.copy.click"))
++                        .clickEvent(ClickEvent.copyToClipboard(meta.getVersion()))
++                );
+ 
+         if (meta.getDescription() != null) {
+             builder
+-                .appendNewline()
+-                .append(Component.text(meta.getDescription()));
++                    .appendNewline()
++                    .append(Component.text(meta.getDescription()));
+         }
+ 
+         if (meta.getWebsite() != null) {
+@@ -163,19 +164,20 @@ public class PaperVersionCommand {
+     }
+ 
+     private CompletableFuture<ComputedVersion> fetchVersionMessage() {
+-       return CompletableFuture.supplyAsync(() -> {
+-           final Component message = Component.textOfChildren(
+-               Component.text(Bukkit.getVersionMessage(), NamedTextColor.WHITE),
+-               Component.newline(),
+-               this.versionFetcher.getVersionMessage()
+-           );
+-
+-           return new ComputedVersion(
+-               message.hoverEvent(Component.translatable("chat.copy.click", NamedTextColor.WHITE))
+-                   .clickEvent(ClickEvent.copyToClipboard(PlainTextComponentSerializer.plainText().serialize(message))),
+-               System.currentTimeMillis()
+-           );
+-       });
++        return CompletableFuture.supplyAsync(() -> {
++            final Component message = Component.textOfChildren(
++//               Component.text(Bukkit.getVersionMessage(), NamedTextColor.WHITE),
++                    MiniMessage.miniMessage().deserialize("<gradient:#8EF56A:#37D67A:#00C2A8>FloriumMC</gradient> running on <gray>" + Bukkit.getVersion()),
++                    Component.newline(),
++                    this.versionFetcher.getVersionMessage()
++            );
++
++            return new ComputedVersion(
++                    message.hoverEvent(Component.translatable("chat.copy.click", NamedTextColor.WHITE))
++                            .clickEvent(ClickEvent.copyToClipboard(PlainTextComponentSerializer.plainText().serialize(message))),
++                    System.currentTimeMillis()
++            );
++        });
+     }
+ 
+     record ComputedVersion(Component message, long computedTime) {
