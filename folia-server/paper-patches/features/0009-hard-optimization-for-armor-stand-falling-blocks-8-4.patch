@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: aloweeed <134882723+aloweeed@users.noreply.github.com>
+Date: Sat, 8 Aug 2026 02:20:17 +0300
+Subject: [PATCH] hard optimization for armor stand + falling blocks (8,448
+ sand -> 25 mspt, 19.95 tps, 2gb ram, ryzen 5 5600x)
+
+
+diff --git a/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java b/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java
+index 10a0be7a4db1a51579d113d279af7a9effe7f438..8b43ad9b23ef4ef1479d325d889baa38aa979ed1 100644
+--- a/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java
++++ b/src/main/java/io/papermc/paper/ServerBuildInfoImpl.java
+@@ -42,9 +42,9 @@ public record ServerBuildInfoImpl(
+         this(
+             getManifestAttribute(manifest, ATTRIBUTE_BRAND_ID)
+                 .map(Key::key)
+-                .orElse(Key.key("papermc", "folia")), // Folia
++                .orElse(Key.key("aloweeed", "florium")), // Folia
+             getManifestAttribute(manifest, ATTRIBUTE_BRAND_NAME)
+-                .orElse("Folia"), // Folia
++                .orElse("Florium"), // Folia
+             SharedConstants.getCurrentVersion().id(),
+             SharedConstants.getCurrentVersion().name(),
+             getManifestAttribute(manifest, ATTRIBUTE_BUILD_NUMBER)
+diff --git a/src/main/java/io/papermc/paper/command/PaperCommands.java b/src/main/java/io/papermc/paper/command/PaperCommands.java
+index 3deca0b4e95609dc95376a86b5cbd525729a1031..b45c5df28d4b7bc747cdb507a7fbd678ce908ba9 100644
+--- a/src/main/java/io/papermc/paper/command/PaperCommands.java
++++ b/src/main/java/io/papermc/paper/command/PaperCommands.java
+@@ -1,6 +1,7 @@
+ package io.papermc.paper.command;
+ 
+ import com.mojang.brigadier.tree.LiteralCommandNode;
++import dev.florium.commands.FloriumStatCommand;
+ import io.papermc.paper.command.brigadier.CommandRegistrationFlag;
+ import io.papermc.paper.command.brigadier.CommandSourceStack;
+ import net.minecraft.server.MinecraftServer;
+@@ -36,6 +37,7 @@ public final class PaperCommands {
+         // Paper commands go here
+         registerInternalCommand(PaperVersionCommand.create(), "bukkit", PaperVersionCommand.DESCRIPTION, List.of("ver", "about"), Set.of());
+         registerInternalCommand(PaperPluginsCommand.create(), "bukkit", PaperPluginsCommand.DESCRIPTION, List.of("pl"), Set.of());
++        registerInternalCommand(FloriumStatCommand.create(), "dev/florium", PaperPluginsCommand.DESCRIPTION, List.of("stat", "tpsbar"), Set.of());
+     }
+ 
+     private static void registerInternalCommand(final LiteralCommandNode<CommandSourceStack> node, final String namespace, final String description, final List<String> aliases, final Set<CommandRegistrationFlag> flags) {
+diff --git a/src/main/java/io/papermc/paper/command/PaperVersionCommand.java b/src/main/java/io/papermc/paper/command/PaperVersionCommand.java
+index f3d58d300bda8694ed5de9dfe78420adaabe025b..4fa93560d1bc720c0ef8ff20be64a5da4663174d 100644
+--- a/src/main/java/io/papermc/paper/command/PaperVersionCommand.java
++++ b/src/main/java/io/papermc/paper/command/PaperVersionCommand.java
+@@ -7,6 +7,7 @@ import com.mojang.brigadier.context.CommandContext;
+ import com.mojang.brigadier.suggestion.Suggestions;
+ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+ import com.mojang.brigadier.tree.LiteralCommandNode;
++import dev.florium.FloriumUtil;
+ import io.papermc.paper.InternalAPIBridge;
+ import io.papermc.paper.command.brigadier.CommandSourceStack;
+ import io.papermc.paper.command.brigadier.Commands;
+@@ -21,7 +22,6 @@ import net.kyori.adventure.text.TextComponent;
+ import net.kyori.adventure.text.event.ClickEvent;
+ import net.kyori.adventure.text.format.NamedTextColor;
+ import net.kyori.adventure.text.format.TextDecoration;
+-import net.kyori.adventure.text.minimessage.MiniMessage;
+ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+ import net.minecraft.server.MinecraftServer;
+ import org.bukkit.Bukkit;
+@@ -167,7 +167,7 @@ public class PaperVersionCommand {
+         return CompletableFuture.supplyAsync(() -> {
+             final Component message = Component.textOfChildren(
+ //               Component.text(Bukkit.getVersionMessage(), NamedTextColor.WHITE),
+-                    MiniMessage.miniMessage().deserialize("<gradient:#8EF56A:#37D67A:#00C2A8>FloriumMC</gradient> running on <gray>" + Bukkit.getVersion()),
++                    FloriumUtil.getVersion(),
+                     Component.newline(),
+                     this.versionFetcher.getVersionMessage()
+             );
